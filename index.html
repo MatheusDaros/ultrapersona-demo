@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UltraPersona — agente de IA ultrapersonalizado</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%237c6cff'/%3E%3Ccircle cx='50' cy='50' r='20' fill='%2322d3ee'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <h1>UltraPersona</h1>
+        <p class="tagline">um agente de IA moldado por quem você é</p>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge">100% vanilla — zero frameworks</span>
+      <span class="badge badge-accent">Coarena Model API</span>
+    </div>
+  </header>
+
+  <div class="app">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar">
+      <!-- Conexão -->
+      <section class="card" id="card-connection">
+        <h2><span class="step">1</span> Conexão</h2>
+        <label class="field">
+          <span>Chave de API do Coarena</span>
+          <input type="password" id="api-key" placeholder="cole sua chave coa_…" autocomplete="off" spellcheck="false" />
+        </label>
+        <label class="check">
+          <input type="checkbox" id="remember-key" />
+          <span>Lembrar neste navegador (localStorage)</span>
+        </label>
+        <div class="row">
+          <button id="btn-connect" class="btn btn-primary">Conectar</button>
+          <button id="btn-forget" class="btn btn-ghost" title="Remove a chave deste navegador">Esquecer</button>
+        </div>
+        <p class="conn-status" id="conn-status">não conectado</p>
+        <dl class="account-info" id="account-info" hidden></dl>
+      </section>
+
+      <!-- Perfil -->
+      <section class="card">
+        <h2><span class="step">2</span> Seu perfil</h2>
+        <p class="hint">Tudo aqui entra no system prompt — veja acontecer na seção 4.</p>
+
+        <label class="field">
+          <span>Como o agente deve te chamar</span>
+          <input type="text" id="p-name" placeholder="ex.: Matheus" data-profile="name" />
+        </label>
+        <label class="field">
+          <span>Contexto profissional</span>
+          <input type="text" id="p-context" placeholder="ex.: fundador de startup, dev backend…" data-profile="context" />
+        </label>
+        <label class="field">
+          <span>Interesses (separados por vírgula)</span>
+          <input type="text" id="p-interests" placeholder="ex.: surf, música brasileira, IA, finanças" data-profile="interests" />
+        </label>
+        <label class="field">
+          <span>Objetivo com este agente</span>
+          <input type="text" id="p-goal" placeholder="ex.: aprender mais rápido, escrever melhor…" data-profile="goal" />
+        </label>
+
+        <div class="grid-2">
+          <label class="field">
+            <span>Idioma</span>
+            <select id="p-language" data-profile="language">
+              <option value="">—</option>
+              <option value="português brasileiro" selected>Português (BR)</option>
+              <option value="inglês">Inglês</option>
+              <option value="espanhol">Espanhol</option>
+              <option value="francês">Francês</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Tom</span>
+            <select id="p-tone" data-profile="tone">
+              <option value="">—</option>
+              <option value="casual e direto, como um amigo experiente">Casual</option>
+              <option value="formal e preciso">Formal</option>
+              <option value="didático, explicando o porquê de cada passo">Didático</option>
+              <option value="objetivo, sem enrolação">Direto ao ponto</option>
+              <option value="leve, com humor na medida">Com humor</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Profundidade</span>
+            <select id="p-depth" data-profile="depth">
+              <option value="">—</option>
+              <option value="respostas curtas, no máximo 3 parágrafos">Conciso</option>
+              <option value="equilíbrio entre brevidade e contexto">Equilibrado</option>
+              <option value="detalhado, com exemplos">Detalhado</option>
+              <option value="análise profunda, com nuances e contrapontos">Profundo</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Formato preferido</span>
+            <select id="p-format" data-profile="format">
+              <option value="">—</option>
+              <option value="texto corrido">Texto corrido</option>
+              <option value="listas e bullets sempre que possível">Listas</option>
+              <option value="exemplos práticos e código quando aplicável">Exemplos/código</option>
+              <option value="tabelas comparativas quando houver opções">Tabelas</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Evitar</span>
+          <input type="text" id="p-avoid" placeholder="ex.: jargão, respostas longas, emojis…" data-profile="avoid" />
+        </label>
+
+        <div class="profile-meter" title="Quantidade de campos preenchidos">
+          <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+          <span id="meter-label">0% personalizado</span>
+        </div>
+      </section>
+
+      <!-- Memórias -->
+      <section class="card">
+        <h2><span class="step">3</span> Memórias do agente</h2>
+        <p class="hint">Fatos persistentes que o agente lembra entre sessões.</p>
+        <ul class="memory-list" id="memory-list"></ul>
+        <div class="row">
+          <input type="text" id="memory-input" class="grow" placeholder="ex.: prefiro exemplos em Python" />
+          <button id="btn-add-memory" class="btn btn-ghost" title="Adicionar memória">+</button>
+        </div>
+      </section>
+
+      <!-- System prompt preview -->
+      <section class="card">
+        <h2><span class="step">4</span> System prompt gerado</h2>
+        <p class="hint">Isto é o que torna o agente <em>ultrapersonalizado</em> — atualizado em tempo real.</p>
+        <pre class="system-preview" id="system-preview"></pre>
+      </section>
+
+      <!-- Modelo -->
+      <section class="card">
+        <h2><span class="step">5</span> Modelo &amp; geração</h2>
+        <label class="field">
+          <span>Modelo <span class="muted" id="models-count"></span></span>
+          <select id="model-select"><option value="">carregando…</option></select>
+        </label>
+        <label class="field">
+          <span>Temperatura <output id="temp-out">0.7</output></span>
+          <input type="range" id="temperature" min="0" max="1.5" step="0.05" value="0.7" />
+        </label>
+        <label class="field">
+          <span>Máx. tokens (vazio = padrão do modelo)</span>
+          <input type="number" id="max-tokens" min="1" max="128000" placeholder="ex.: 2048" />
+        </label>
+        <button id="btn-wipe" class="btn btn-ghost danger">Apagar todos os dados locais</button>
+      </section>
+    </aside>
+
+    <!-- ============ CHAT ============ -->
+    <main class="chat">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="empty-state">
+          <h2>Converse com um agente que já te conhece</h2>
+          <p>Preencha o perfil ao lado e veja como cada resposta muda. Ou comece direto:</p>
+          <div class="suggestions">
+            <button class="suggestion">O que você já sabe sobre mim?</button>
+            <button class="suggestion">Me explique um conceito novo do meu jeito</button>
+            <button class="suggestion">Monte um plano de estudos personalizado para mim</button>
+            <button class="suggestion">Me ajude a escrever um e-mail difícil</button>
+          </div>
+        </div>
+      </div>
+
+      <form class="composer" id="composer">
+        <textarea id="input" rows="1" placeholder="Escreva sua mensagem… (Enter envia, Shift+Enter quebra linha)"></textarea>
+        <button type="button" id="btn-stop" class="btn btn-stop" hidden>■ Parar</button>
+        <button type="submit" id="btn-send" class="btn btn-primary">Enviar</button>
+      </form>
+
+      <p class="privacy-note">
+        Demo local: seu perfil e memórias ficam apenas no seu navegador; a chave só é enviada a coarena.ai.
+        Atenção: a Coarena armazena todos os prompts e respostas (e pode usá-los em datasets) — não digite dados sensíveis.
+      </p>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+  <script src="app.js"></script>
+</body>
+</html>
