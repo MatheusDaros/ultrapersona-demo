@@ -8,7 +8,7 @@ const model = $('#model');
 const connectionDialog = $('#connection-dialog');
 const keyInput = $('#api-key');
 const navigation = document.querySelectorAll('.nav-link');
-const state = { key: '', verification: null, generation: null, local: [], live: [] };
+const state = { key: '', verification: null, generation: null, local: [], live: [], drafts: { demo: '', live: '' } };
 
 const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 
@@ -96,7 +96,8 @@ function updateConnectionMode() {
     : 'Respostas de exemplo baseadas no perfil da Marina.';
   $('#connection-form').hidden = live;
   $('#connected-settings').hidden = !live;
-  input.value = '';
+  input.placeholder = live ? 'Pergunte sobre a rotina fictícia da Marina…' : 'Experimente: Como melhorar meu sono?';
+  input.value = state.drafts[live ? 'live' : 'demo'];
   renderConversation();
 }
 
@@ -127,6 +128,7 @@ async function connect(event) {
     model.replaceChildren(...models.map(({ id, name }) => new Option(name, id)));
     const preferred = models.find(({ id }) => id === 'gemini-3-8-flash');
     model.value = (preferred || models[0]).id;
+    state.drafts.demo = input.value;
     state.key = key;
     updateConnectionMode();
     showConnectionStatus('IA conectada nesta sessão.');
@@ -149,6 +151,7 @@ async function connect(event) {
 function disconnect() {
   state.generation?.abort();
   state.generation = null;
+  state.drafts.live = input.value;
   state.key = '';
   state.live = [];
   model.replaceChildren();
@@ -190,13 +193,13 @@ async function send(text, topic) {
   const controller = new AbortController();
   const timeout = AbortSignal.timeout(60000);
   const answer = appendMessage('assistant', 'Preparando resposta…');
+  const output = document.createTextNode('');
   answer.message.setAttribute('aria-busy', 'true');
   state.generation = controller;
   setGenerating(true);
   scrollMessages();
 
   try {
-    const output = document.createTextNode('');
     const reply = await streamReply({
       key: state.key,
       model: model.value,
@@ -215,11 +218,15 @@ async function send(text, topic) {
     storeTurn(state.live, text, reply);
   } catch (error) {
     if (state.generation !== controller) return;
-    answer.message.remove();
     const message = controller.signal.aborted ? 'Resposta interrompida. Você pode fazer outra pergunta.'
       : timeout.aborted ? 'A resposta demorou demais. Envie a pergunta novamente para tentar.'
         : error instanceof TypeError ? 'Falha de conexão com a Coarena. Tente novamente.' : error.message;
-    appendMessage('error', message);
+    if (output.data.trim()) {
+      output.appendData(`\n\n${message}`);
+    } else {
+      answer.message.remove();
+      appendMessage('error', message);
+    }
     trimMessages();
     scrollMessages();
   } finally {

@@ -80,16 +80,26 @@ export const suggestions = {
   },
 };
 
+const sampleQuestions = {
+  sleep: ['Sono', 'Como melhorar meu sono?', 'Como posso dormir melhor?', 'O que fazer para ter noites melhores?'],
+  movement: ['Movimento', 'Exercícios', 'Como posso me movimentar mais?', 'Como andar mais?', 'Como encaixar exercícios na rotina?'],
+  energy: ['Energia', 'Como ter mais energia?', 'Como posso ter mais energia nas manhãs?', 'Como organizar minhas manhãs?'],
+};
+
+function normalizeQuestion(text) {
+  return text.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .trim().replace(/[.!?]+$/, '').trimEnd().replace(/\s+/g, ' ');
+}
+
+const sampleReplies = new Map(Object.entries(suggestions).flatMap(([topic, suggestion]) =>
+  [suggestion.prompt, suggestion.action, ...sampleQuestions[topic]]
+    .map((question) => [normalizeQuestion(question), suggestion.reply]),
+));
+
 export function demoReply(text, topic) {
   if (Object.hasOwn(suggestions, topic)) return suggestions[topic].reply;
-  const query = text.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-  if (/\b(remedios?|medicamentos?|dosagem|superdosagem|comprimidos?|sintomas?|doencas?|diagnostic\w*|dor|dores|insonia|melatonina|tratamento|prescrev\w*|falta de ar|urgencia|emergencia)\b/.test(query)) {
-    return 'Posso ajudar a organizar hábitos de bem-estar da Marina. Para sintomas, medicamentos ou decisões sobre tratamento, procure um profissional de saúde.';
-  }
-  if (/\b(sono|dorm\w*|noturn\w*|noite)\b/.test(query)) return suggestions.sleep.reply;
-  if (/\b(caminh\w*|passos|movimento|exercicio)\b/.test(query)) return suggestions.movement.reply;
-  if (/\b(energia|manha|acord\w*)\b/.test(query)) return suggestions.energy.reply;
-  return 'Nesta demo, tenho exemplos sobre sono, movimento e energia. Use uma pergunta sugerida para ver como o perfil fictício da Marina muda o plano.';
+  return sampleReplies.get(normalizeQuestion(text)) ??
+    'Posso ajudar a organizar hábitos da Marina. Escolha uma das perguntas sugeridas sobre sono, movimento e energia. Para sintomas, medicamentos ou decisões sobre tratamento, procure um profissional de saúde.';
 }
 
 export function buildMessages(history, text) {

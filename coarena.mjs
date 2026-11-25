@@ -35,6 +35,7 @@ export async function parseCompletion(response, onDelta) {
   let buffer = '';
   let full = '';
   let eventData = [];
+  let finishReason;
 
   function readLine(line) {
     if (line.startsWith('data:')) {
@@ -50,7 +51,9 @@ export async function parseCompletion(response, onDelta) {
     try { event = JSON.parse(data); }
     catch { throw new Error('A API enviou uma resposta inválida.'); }
     if (event?.error) throw new Error('A resposta foi interrompida pela API.');
-    const delta = event?.choices?.[0]?.delta?.content;
+    const choice = event?.choices?.[0];
+    if (typeof choice?.finish_reason === 'string') finishReason = choice.finish_reason;
+    const delta = choice?.delta?.content;
     if (typeof delta === 'string' && delta) {
       full += delta;
       onDelta(delta);
@@ -72,6 +75,9 @@ export async function parseCompletion(response, onDelta) {
       }
       if (done) break;
     }
+    if (finishReason === 'length') throw new Error('A resposta atingiu o limite de tamanho.');
+    if (finishReason && finishReason !== 'stop') throw new Error('A resposta foi interrompida pela API.');
+    if (!finished && finishReason !== 'stop') throw new Error('A conexão terminou antes de concluir a resposta.');
     if (!full.trim()) throw new Error('A API respondeu sem texto.');
     return full;
   } finally {

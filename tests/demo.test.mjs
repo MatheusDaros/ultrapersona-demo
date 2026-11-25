@@ -13,7 +13,12 @@ test('dashboard averages agree with the fictional week and its suggestions', () 
 test('the local assistant answers demo topics and declines unsupported or clinical questions', () => {
   assert.match(demoReply('Como melhorar meu sono?'), /22h45/);
   assert.match(demoReply('Monte uma caminhada', 'movement'), /segunda/);
+  assert.match(demoReply('Como posso me movimentar mais?'), /4\.260/);
+  assert.match(demoReply('O que fazer para ter noites melhores?'), /22h45/);
+  assert.match(demoReply('Como posso ter mais energia nas manhãs?'), /2\/5 na quinta/);
   assert.match(demoReply('Dormir melhor tomando remédio?'), /organizar hábitos/);
+  assert.match(demoReply('Posso caminhar depois de desmaiar?'), /profissional de saúde/);
+  assert.doesNotMatch(demoReply('Como melhorar meu sono? Sinto falta de ar.'), /22h45/);
   assert.match(demoReply('Qual é a capital do Japão?'), /sono, movimento e energia/);
 });
 
@@ -53,6 +58,17 @@ test('empty and provider error streams fail visibly', async () => {
     parseCompletion(new Response('data: {"error":{"message":"untrusted"}}\n\n'), () => {}),
     /interrompida pela API/,
   );
+});
+
+test('a disconnected or truncated stream is not a completed reply', async () => {
+  const partial = new Response('data: {"choices":[{"delta":{"content":"Uma sugestão"}}]}\n\n');
+  await assert.rejects(parseCompletion(partial, () => {}), /concluir a resposta/);
+
+  const truncated = new Response(
+    'data: {"choices":[{"delta":{"content":"Uma sugestão"},"finish_reason":"length"}]}\n\n' +
+    'data: [DONE]\n\n',
+  );
+  await assert.rejects(parseCompletion(truncated, () => {}), /limite de tamanho/);
 });
 
 test('only non-deprecated models with valid ids can be selected', () => {
