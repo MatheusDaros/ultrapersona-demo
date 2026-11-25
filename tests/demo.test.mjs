@@ -60,6 +60,14 @@ test('empty and provider error streams fail visibly', async () => {
   );
 });
 
+test('a stop finish reason completes a reply even without a DONE sentinel', async () => {
+  const response = new Response(
+    'data: {"choices":[{"delta":{"content":"Olá, Marina!"}}]}\n\n' +
+    'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+  );
+  assert.equal(await parseCompletion(response, () => {}), 'Olá, Marina!');
+});
+
 test('a disconnected or truncated stream is not a completed reply', async () => {
   const partial = new Response('data: {"choices":[{"delta":{"content":"Uma sugestão"}}]}\n\n');
   await assert.rejects(parseCompletion(partial, () => {}), /concluir a resposta/);

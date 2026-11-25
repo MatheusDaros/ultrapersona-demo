@@ -222,12 +222,13 @@ async function send(text, topic) {
       : timeout.aborted ? 'A resposta demorou demais. Envie a pergunta novamente para tentar.'
         : error instanceof TypeError ? 'Falha de conexão com a Coarena. Tente novamente.' : error.message;
     if (output.data.trim()) {
+      storeTurn(state.live, text, `${output.data}\n\n[Resposta parcial da geração anterior.]`);
       output.appendData(`\n\n${message}`);
     } else {
       answer.message.remove();
       appendMessage('error', message);
+      trimMessages();
     }
-    trimMessages();
     scrollMessages();
   } finally {
     if (state.generation === controller) {
