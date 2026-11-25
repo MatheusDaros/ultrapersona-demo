@@ -91,14 +91,18 @@ function normalizeQuestion(text) {
     .trim().replace(/[.!?]+$/, '').trimEnd().replace(/\s+/g, ' ');
 }
 
-const sampleReplies = new Map(Object.entries(suggestions).flatMap(([topic, suggestion]) =>
+const sampleTopics = new Map(Object.entries(suggestions).flatMap(([topic, suggestion]) =>
   [suggestion.prompt, suggestion.action, ...sampleQuestions[topic]]
-    .map((question) => [normalizeQuestion(question), suggestion.reply]),
+    .map((question) => [normalizeQuestion(question), topic]),
 ));
 
+export function eventTopic(text) {
+  return sampleTopics.get(normalizeQuestion(text));
+}
+
 export function demoReply(text, topic) {
-  if (Object.hasOwn(suggestions, topic)) return suggestions[topic].reply;
-  return sampleReplies.get(normalizeQuestion(text)) ??
+  const selected = Object.hasOwn(suggestions, topic) ? topic : eventTopic(text);
+  return suggestions[selected]?.reply ??
     'Posso ajudar a organizar hábitos da Marina. Escolha uma das perguntas sugeridas sobre sono, movimento e energia. Para sintomas, medicamentos ou decisões sobre tratamento, procure um profissional de saúde.';
 }
 
