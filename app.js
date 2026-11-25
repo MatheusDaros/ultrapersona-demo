@@ -1,4 +1,4 @@
-import { person, metrics, suggestions, demoReply, buildMessages, eventTopic } from './health.mjs';
+import { person, metrics, suggestions, demoReply, buildMessages, eventTopic, eventChatLimits } from './health.mjs';
 import { verifyConnection, streamReply } from './coarena.mjs';
 import { eventBackend } from './event-config.mjs';
 
@@ -84,7 +84,7 @@ function renderConversation() {
   appendMessage(eventBackend ? 'sample' : 'assistant', live
     ? 'Posso montar um plano de bem-estar com os dados fictícios da Marina. Pergunte sobre sono, movimento ou energia.'
     : 'Oi, Marina! Podemos começar por uma rotina noturna, uma caminhada curta ou uma manhã mais tranquila. Qual combina com a sua semana?');
-  for (const { role, content } of live ? state.live : state.local) appendMessage(role, content);
+  for (const { role, content } of live || eventBackend ? state.live : state.local) appendMessage(role, content);
   scrollMessages();
 }
 
@@ -104,7 +104,8 @@ function updateConnectionMode() {
     $('#mode-label').textContent = 'IA do evento';
     $('#mode-label').classList.add('live');
     $('#open-connection').hidden = true;
-    $('#assistant-subtitle').textContent = 'Respostas da IA para as sugestões de sono, movimento e energia da Marina.';
+    $('#assistant-subtitle').textContent = 'As mensagens são enviadas à Coarena. Use apenas dados de exemplo.';
+    input.placeholder = 'Faça uma pergunta sobre a Marina ou outro assunto…';
   }
   renderConversation();
 }
@@ -186,13 +187,27 @@ function trimMessages() {
   while (messages.childElementCount > 41) messages.children[1].remove();
 }
 
-async function getEventReply(topic, signal, onDelta) {
+async function getEventReply(text, topic, signal, onDelta) {
   const endpoint = new URL('./api/event-reply', import.meta.url);
-  endpoint.searchParams.set('topic', topic);
-  const response = await fetch(endpoint, { signal });
+  const options = { signal };
+  if (topic && state.live.length === 0) {
+    endpoint.searchParams.set('topic', topic);
+  } else {
+    const history = state.live.slice(-eventChatLimits.history).map(({ role, content }) => ({
+      role,
+      content: content.slice(0, role === 'assistant' ? eventChatLimits.answer : eventChatLimits.question),
+    }));
+    Object.assign(options, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history }),
+    });
+  }
+  const response = await fetch(endpoint, options);
   if (!response.ok) throw new Error('Resposta da IA indisponível.');
   const { reply } = await response.json();
   if (typeof reply !== 'string' || !reply.trim()) throw new Error('Resposta da IA indisponível.');
+  signal.throwIfAborted();
   onDelta(reply);
   return reply;
 }
@@ -201,10 +216,9 @@ async function send(text, topic) {
   if (!text || state.generation) return;
   appendMessage('user', text);
 
-  const eventSelection = eventBackend ? topic || eventTopic(text) : undefined;
-  if (!state.key && !eventSelection) {
+  if (!state.key && !eventBackend) {
     const answer = demoReply(text, topic);
-    appendMessage(eventBackend ? 'sample' : 'assistant', answer);
+    appendMessage('assistant', answer);
     storeTurn(state.local, text, answer);
     scrollMessages();
     return;
@@ -227,8 +241,8 @@ async function send(text, topic) {
       output.appendData(delta);
       if (follow) scrollMessages();
     }
-    const reply = eventSelection
-      ? await getEventReply(eventSelection, signal, onDelta)
+    const reply = eventBackend
+      ? await getEventReply(text, topic, signal, onDelta)
       : await streamReply({
         key: state.key,
         model: model.value,
@@ -245,9 +259,10 @@ async function send(text, topic) {
     const message = controller.signal.aborted ? 'Resposta interrompida. Você pode fazer outra pergunta.'
       : timeout.aborted ? 'A resposta demorou demais. Envie a pergunta novamente para tentar.'
         : error instanceof TypeError ? 'Falha de conexão com a Coarena. Tente novamente.' : error.message;
-    if (eventSelection && !controller.signal.aborted) {
+    const sampleTopic = eventBackend ? topic || eventTopic(text) : undefined;
+    if (sampleTopic && !controller.signal.aborted) {
       answer.message.remove();
-      appendMessage('sample', `A IA está indisponível agora. Aqui vai um exemplo da demo.\n\n${demoReply(text, eventSelection)}`);
+      appendMessage('sample', `A IA está indisponível agora. Aqui vai um exemplo da demo.\n\n${demoReply(text, sampleTopic)}`);
       trimMessages();
     } else if (output.data.trim()) {
       storeTurn(state.live, text, `${output.data}\n\n[Resposta parcial da geração anterior.]`);

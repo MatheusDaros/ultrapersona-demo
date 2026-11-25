@@ -10,6 +10,6 @@ Os testes da lógica da demo e do leitor da API rodam com `node --test`.
 
 ## Publicar a versão de evento
 
-O Vercel executa `npm run build` e serve o conteúdo de `dist/`. Configure `COARENA_API_KEY` como variável secreta no ambiente de produção do projeto. A função `/api/event-reply` gera respostas para os três temas fictícios com cache de uma hora. Perguntas fora desses exemplos e falhas da IA usam respostas locais identificadas na conversa. A chave e as mensagens digitadas no navegador ficam fora das requisições do navegador para a Coarena.
+O Vercel executa `npm run build` e serve o conteúdo de `dist/`. Configure `COARENA_API_KEY` como variável secreta no ambiente de produção do projeto. O backend envia perguntas livres e até três trocas recentes à Coarena. O chat usa o perfil fictício da Marina quando ele for relevante. As três sugestões iniciais podem usar respostas em cache por uma hora. Em caso de falha, o chat identifica os exemplos locais disponíveis. Use apenas dados de exemplo.
 
 Após publicar, execute `npm run smoke:event -- https://ultrapersona-saude.vercel.app`. O comando verifica se a página e a configuração do modo evento estão públicas e se a função retorna uma resposta para cada tema. A verificação falha se a função estiver indisponível, mesmo quando o navegador ainda consegue mostrar o exemplo local. Com cache vazio, o teste pode gerar uma chamada à Coarena por tema.

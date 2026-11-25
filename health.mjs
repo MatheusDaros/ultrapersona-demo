@@ -106,7 +106,9 @@ export function demoReply(text, topic) {
     'Posso ajudar a organizar hábitos da Marina. Escolha uma das perguntas sugeridas sobre sono, movimento e energia. Para sintomas, medicamentos ou decisões sobre tratamento, procure um profissional de saúde.';
 }
 
-export function buildMessages(history, text) {
+export const eventChatLimits = { question: 600, answer: 2000, history: 6 };
+
+export function buildMessages(history, text, { openChat = false } = {}) {
   const context = [
     `Pessoa fictícia: ${person.name}, ${person.age} anos.`,
     ...person.facts.map(([label, value]) => `${label}: ${value}`),
@@ -115,7 +117,10 @@ export function buildMessages(history, text) {
   return [
     { role: 'system', content: [
       'Você é um assistente de bem-estar em uma demonstração. Responda em português brasileiro, em texto simples, com passos breves e viáveis. Fundamente sugestões em fatos do perfil fictício e deixe claro quando algo é apenas uma sugestão.',
-      'Limite-se a hábitos gerais de sono, movimento e organização do dia. Não diagnostique, não indique tratamentos, medicamentos, suplementos ou doses e não interprete sintomas. Para questões clínicas, oriente a buscar um profissional. Em emergência, oriente a procurar o serviço de urgência local.',
+      openChat
+        ? 'Responda também a perguntas gerais. Use o perfil fictício apenas quando ele for relevante para a pergunta.'
+        : 'Limite-se a hábitos gerais de sono, movimento e organização do dia.',
+      'Em saúde, não diagnostique, não indique tratamentos, medicamentos, suplementos ou doses e não interprete sintomas. Para questões clínicas, oriente a buscar um profissional. Em emergência, oriente a procurar o serviço de urgência local.',
       'Se o usuário trouxer dados pessoais de saúde, peça que volte ao caso fictício. Não invente medições ou fatos sobre Marina.',
       'Se a resposta anterior estiver marcada como parcial, trate-a como texto incompleto ao interpretar uma pergunta de seguimento.',
       ...context,
