@@ -1,0 +1,10 @@
+{
+  "name": "ultrapersona-saude",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "smoke:event": "node scripts/smoke-event.mjs"
+  }
+}
