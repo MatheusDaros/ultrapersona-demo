@@ -52,6 +52,8 @@ test('concurrent calls share a fixed fictional prompt, and the response can be c
     assert.equal(options.headers.Authorization, 'Bearer test-provider-key');
     const body = JSON.parse(options.body);
     assert.equal(body.messages.length, 2);
+    assert.equal(body.reasoning_effort, 'low');
+    assert.equal(body.max_tokens, 1600);
     assert.match(body.messages[0].content, /Marina Costa/);
     assert.equal(body.messages[1].content, 'Monte uma rotina noturna para mim.');
     return Response.json({ choices: [{ message: { content: 'Uma resposta de teste.' } }] });

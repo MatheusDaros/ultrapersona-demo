@@ -14,7 +14,8 @@ async function generate(topic, key) {
     body: JSON.stringify({
       model: 'gemini-3-8-flash',
       messages: buildMessages([], suggestions[topic].prompt),
-      max_tokens: 650,
+      reasoning_effort: 'low',
+      max_tokens: 1600,
     }),
     signal: AbortSignal.timeout(18000),
   });
